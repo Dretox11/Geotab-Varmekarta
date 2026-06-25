@@ -312,7 +312,7 @@ geotab.addin.heatmap = function() {
                     },
                     function(error) { // FIX: Denna funktion fångar upp om användaren nekar plats
                         console.warn("Plats nekad, startar med standardkoordinater.");
-                        a({ longitude: -79.709441, latitude: 43.434497 });
+                        a({ longitude: 59.3038451, latitude: 18.0037563 });
                         readyCallback();
                     }
                 );
