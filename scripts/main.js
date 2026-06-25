@@ -347,7 +347,7 @@ geotab.addin.heatmap = function() {
 
     // ---- GEOTAB ADD-IN LIVSCYKEL ----
     return {
-        // Körs en gång när Add-in laddas
+       // Körs en gång när Add-in laddas
         initialize: function(api, state, readyCallback) {
             v = api; // Spara api-objektet
 
@@ -357,14 +357,16 @@ geotab.addin.heatmap = function() {
                         a(position.coords); // Starta kartan på användarens nuvarande plats
                         readyCallback();
                     },
-                    function(error) { // FIX: Denna funktion fångar upp om användaren nekar plats
-                        console.warn("Plats nekad, startar med standardkoordinater.");
-                        a({ longitude: 59.3038451, latitude: 18.0037563 });
+                    function(error) { 
+                        console.warn("Plats nekad, startar i Stockholm.");
+                        // Standardkoordinater för Stockholm (Sverige)
+                        a({ longitude: 18.0686, latitude: 59.3293 });
                         readyCallback();
                     }
                 );
             } else {
-                a({ longitude: 59.3038451, latitude: 18.0037563 });
+                // Om webbläsaren inte stöder platstjänster alls
+                a({ longitude: 18.0686, latitude: 59.3293 });
                 readyCallback();
             }
         },
