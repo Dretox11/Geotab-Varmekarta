@@ -155,13 +155,14 @@ geotab.addin.heatmap = function() {
         }
     };
 
-    // HÄMTA DATA: Regelbrott/Undantag (Exception History)
+    // HÄMTA DATA: Regelbrott/Undantag (Exception History) - OPTIMERAD VERSION
     var o = function() {
         var ruleId = p.options[p.selectedIndex].value;
         var ruleName = p.options[p.selectedIndex].text;
         var vehicles = [];
         var options = y.options;
         
+        // Hämta valda fordon
         for (var a = 0; a < options.length; a++) {
             if (options[a].selected) vehicles.push(options[a].value || options[a].text);
         }
@@ -170,43 +171,60 @@ geotab.addin.heatmap = function() {
         var toDate = w.value;
 
         if (b(""), B(""), null !== vehicles && null !== ruleId && "" !== fromDate && "" !== toDate) {
-            T(!0);
+            T(!0); // Visa laddningsspinner
             var fromISO = new Date(fromDate).toISOString();
             var toISO = new Date(toDate).toISOString();
-            var calls = [];
+            var exceptionCalls = [];
 
-            // Hämta ExceptionEvents för valda fordon och regel
+            // Steg 1: Bygg anrop för att hämta ExceptionEvents för valda fordon och regel
             for (var s = 0; s < vehicles.length; s++) {
-                calls.push(["Get", {
+                exceptionCalls.push(["Get", {
                     typeName: "ExceptionEvent",
                     resultsLimit: I,
                     search: { deviceSearch: { id: vehicles[s] }, ruleSearch: { id: ruleId }, fromDate: fromISO, toDate: toISO }
                 }]);
             }
 
-            v.multiCall(calls, function(exceptionResults) {
+            // Skicka iväg alla exception-anrop
+            v.multiCall(exceptionCalls, function(exceptionResults) {
                 if (x(exceptionResults)) {
                     b("No data to display");
                     T(!1);
                     return;
                 }
 
-                var totalExceptions = 0, exceededExceptions = 0, logCalls = [];
+                var logCalls = [];
+                var vehiclesWithExceptions = [];
+                var exceptionsByDevice = {};
+                var totalExceptions = 0;
                 
-                // För varje regelbrott, hämta loggrekordet (platsen) under regelbrottets tid
+                // Steg 2: Analysera vilka fordon som faktiskt hade regelbrott
                 for (var n = 0; n < exceptionResults.length; n++) {
                     var exceptions = exceptionResults[n];
-                    for (var i = 0; i < exceptions.length; i++) {
-                        totalExceptions++;
+                    
+                    if (exceptions && exceptions.length > 0) {
+                        var deviceId = vehicles[n]; // Matchar index från våra anrop
+                        vehiclesWithExceptions.push(deviceId);
+                        exceptionsByDevice[deviceId] = exceptions;
+                        totalExceptions += exceptions.length;
+
+                        // Bygg anrop för att hämta LogRecords för ENBART de fordon som hade regelbrott
                         logCalls.push(["Get", {
                             typeName: "LogRecord",
                             resultsLimit: I,
-                            search: { deviceSearch: { id: exceptions[i].device.id }, fromDate: exceptions[i].activeFrom, toDate: exceptions[i].activeTo }
+                            search: { deviceSearch: { id: deviceId }, fromDate: fromISO, toDate: toISO }
                         }]);
                     }
-                    if (exceptions.length >= I) exceededExceptions++;
                 }
 
+                // Om inga fordon hade några regelbrott av denna typ
+                if (logCalls.length === 0) {
+                    b("No data to display");
+                    T(!1);
+                    return;
+                }
+
+                // Steg 3: Hämta LogRecords för hela tidsperioden (max 1 anrop per fordon)
                 v.multiCall(logCalls, function(logResults) {
                     if (x(logResults)) {
                         b("No data to display");
@@ -214,42 +232,71 @@ geotab.addin.heatmap = function() {
                         return;
                     }
 
-                    var heatData = [], boundsData = [], totalRecords = 0, exceededLogs = 0;
+                    var heatData = [];
+                    var boundsData = [];
+                    var totalRecords = 0;
+                    var exceededLogs = 0;
                     
+                    // Steg 4: Filtrera loggarna lokalt i webbläsaren
                     for (var i = 0; i < logResults.length; i++) {
                         var logs = logResults[i];
+                        var deviceId = vehiclesWithExceptions[i];
+                        var deviceExceptions = exceptionsByDevice[deviceId];
+
+                        if (logs.length >= I) exceededLogs++;
+
                         for (var c = 0; c < logs.length; c++) {
-                            if (0 !== logs[c].latitude || 0 !== logs[c].longitude) {
-                                heatData.push({ lat: logs[c].latitude, lon: logs[c].longitude, value: 1 });
-                                boundsData.push(new L.LatLng(logs[c].latitude, logs[c].longitude));
-                                totalRecords++;
+                            var log = logs[c];
+                            
+                            // Sålla bort ogiltiga koordinater
+                            if (0 !== log.latitude || 0 !== log.longitude) {
+                                // Loggens tidsstämpel
+                                var logTime = new Date(log.dateTime).getTime(); 
+
+                                // Kontrollera om loggens tid faller inom något av fordonets regelbrott
+                                var isWithinException = false;
+                                for (var e = 0; e < deviceExceptions.length; e++) {
+                                    var ex = deviceExceptions[e];
+                                    var start = new Date(ex.activeFrom).getTime();
+                                    var end = new Date(ex.activeTo).getTime();
+
+                                    if (logTime >= start && logTime <= end) {
+                                        isWithinException = true;
+                                        break; // Vi hittade en matchning, ingen idé att leta vidare
+                                    }
+                                }
+
+                                // Om loggen skedde under ett regelbrott, spara den för kartan!
+                                if (isWithinException) {
+                                    heatData.push({ lat: log.latitude, lon: log.longitude, value: 1 });
+                                    boundsData.push(new L.LatLng(log.latitude, log.longitude));
+                                    totalRecords++;
+                                }
                             }
                         }
-                        if (logs.length >= I) exceededLogs++;
                     }
 
+                    // Steg 5: Rita ut på kartan
                     if (heatData.length > 0) {
                         h.fitBounds(boundsData);
                         m.setLatLngs(heatData);
                         B("Displaying " + S(totalRecords) + " combined log records associated with the " + S(totalExceptions) + " '" + ruleName + "' rule exceptions found for the " + S(D) + " selected vehicles. [" + N() + " sec]");
                         
-                        if (exceededExceptions > 0 || exceededLogs > 0) {
-                            var warning = "Note: Not all results are displayed because";
-                            if (exceededExceptions) warning += " the result limit of " + S(I) + " was exceeded for '" + ruleName + "' rule exceptions";
-                            if (exceededExceptions > 0 && exceededLogs > 0) warning += " and";
-                            if (exceededLogs > 0) warning += " the result limit of " + S(I) + " was exceeded for the logs.";
-                            b(warning + ".");
+                        if (exceededLogs > 0) {
+                            b("Note: The result limit of " + S(I) + " logs was exceeded for some vehicles. Try selecting a shorter date range if you feel data is missing.");
                         }
                         T(!1);
                     } else {
                         b("No data to display");
                     }
+
                 }, function(err) {
-                    alert(err);
+                    alert("Error fetching logs: " + err);
                     T(!1);
                 });
+
             }, function(err) {
-                alert(err);
+                alert("Error fetching exceptions: " + err);
                 T(!1);
             });
         }
