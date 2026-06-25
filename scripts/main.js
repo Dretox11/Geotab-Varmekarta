@@ -317,7 +317,7 @@ geotab.addin.heatmap = function() {
                     }
                 );
             } else {
-                a({ longitude: -79.709441, latitude: 43.434497 });
+                a({ longitude: 59.3038451, latitude: 18.0037563 });
                 readyCallback();
             }
         },
