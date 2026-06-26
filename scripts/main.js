@@ -16,6 +16,7 @@ geotab.addin.heatmap = function() {
         D, // Antal valda fordon
         t, // startTime (För att mäta hur lång tid hämtningen tar)
         I = 50000; // Resultatgräns (resultsLimit) per anrop
+        E_LIMIT = 300000; // Ny, högre gräns för Exception History
 
     // Hjälpfunktion: Uppdaterar felmeddelande-UI
     var b = function(e) { l.innerHTML = e; };
@@ -180,7 +181,7 @@ geotab.addin.heatmap = function() {
             for (var s = 0; s < vehicles.length; s++) {
                 exceptionCalls.push(["Get", {
                     typeName: "ExceptionEvent",
-                    resultsLimit: I,
+                    resultsLimit: E_LIMIT, // <--- ÄNDRAD FRÅN I
                     search: { deviceSearch: { id: vehicles[s] }, ruleSearch: { id: ruleId }, fromDate: fromISO, toDate: toISO }
                 }]);
             }
@@ -211,7 +212,7 @@ geotab.addin.heatmap = function() {
                         // Bygg anrop för att hämta LogRecords för ENBART de fordon som hade regelbrott
                         logCalls.push(["Get", {
                             typeName: "LogRecord",
-                            resultsLimit: I,
+                            resultsLimit: E_LIMIT, // <--- ÄNDRAD FRÅN I
                             search: { deviceSearch: { id: deviceId }, fromDate: fromISO, toDate: toISO }
                         }]);
                     }
@@ -283,7 +284,7 @@ geotab.addin.heatmap = function() {
                         B("Displaying " + S(totalRecords) + " combined log records associated with the " + S(totalExceptions) + " '" + ruleName + "' rule exceptions found for the " + S(D) + " selected vehicles. [" + N() + " sec]");
                         
                         if (exceededLogs > 0) {
-                            b("Note: The result limit of " + S(I) + " logs was exceeded for some vehicles. Try selecting a shorter date range if you feel data is missing.");
+                            b("Note: The result limit of " + S(E_LIMIT) + " logs was exceeded for some vehicles. Try selecting a shorter date range if you feel data is missing.");
                         }
                         T(!1);
                     } else {
