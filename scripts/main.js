@@ -15,7 +15,7 @@ geotab.addin.heatmap = function() {
         c, // loading (Laddnings-spinnern)
         D, // Antal valda fordon
         t, // startTime (För att mäta hur lång tid hämtningen tar)
-        I = 50000; // Resultatgräns (resultsLimit) per anrop
+        I = 50000, // Resultatgräns (resultsLimit) per anrop
         E_LIMIT = 300000; // Ny, högre gräns för Exception History
 
     // Hjälpfunktion: Uppdaterar felmeddelande-UI
