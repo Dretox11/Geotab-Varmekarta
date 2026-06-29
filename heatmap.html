@@ -4,7 +4,7 @@
   <meta charset="utf-8">
   <meta http-equiv="x-ua-compatible" content="ie=edge">
   <meta name="viewport" content="width=device-width,initial-scale=1">
-  <title>Värmekarta för avvikelser</title>
+  <title>Värmekarta för Avvikelser</title>
   
   <link rel="stylesheet" href="styles/vendor.css">
   <link rel="stylesheet" href="styles/main.css">
@@ -17,7 +17,7 @@
     
     <div id="disclaimer" style="background-color: #e8f4fa; border: 1px solid #bce0f0; color: #1a4f70; padding: 10px; margin-bottom: 15px; border-radius: 4px;">
       <label id="disclaimerLabel" style="font-weight: bold; display: block; margin-bottom: 5px;">VÄRMEKARTA FÖR REGELBROTT</label>
-      <p style="margin-bottom: 0; font-size: 14px;">Detta verktyg hjälper dig att visuellt analysera var specifika avvikelser (t.ex. fortkörning, tomgångskörning eller skarpa svängar) sker mest frekvent.</p>
+      <p style="margin-bottom: 0; font-size: 14px;">Detta verktyg hjälper dig att visuellt analysera var specifika Avvikelser (t.ex. fortkörning, tomgångskörning eller skarpa svängar) sker mest frekvent.</p>
     </div>
 
     <div class="cssGrid sm-part-12">
@@ -33,11 +33,33 @@
           <label for="vehicles" style="font-weight: bold; margin-top: 10px;">Fordon:</label> 
           <select id="vehicles" class="checkmateFormEditField" multiple="true" style="min-height: 150px;"></select> 
           
-          <label for="from" style="font-weight: bold; margin-top: 10px;">Från datum:</label> 
-          <input id="from" type="datetime-local" class="checkmateFormEditField"> 
-          
-          <label for="to" style="font-weight: bold; margin-top: 10px;">Till datum:</label> 
-          <input id="to" type="datetime-local" class="checkmateFormEditField">
+          <label style="font-weight: bold; margin-top: 15px; display: block;">Tidsperiod:</label>
+          <div style="position: relative; margin-bottom: 15px;">
+            
+            <button id="dateDropdownBtn" class="checkmateFormEditField" style="width: 100%; text-align: left; display: flex; justify-content: space-between; align-items: center; cursor: pointer; background-color: #fff; padding: 6px 10px;">
+              <span id="dateDropdownText">Idag</span>
+              <span style="font-size: 10px; color: #666;">▼</span>
+            </button>
+
+            <div id="dateDropdownContent" style="display: none; position: absolute; top: 100%; left: 0; right: 0; background: white; border: 1px solid #ccc; box-shadow: 0 4px 8px rgba(0,0,0,0.15); z-index: 100; padding: 10px; border-radius: 4px; margin-top: 4px;">
+              <div style="margin-bottom: 10px;"><input type="radio" name="dateRange" value="today" id="dr_today" checked> <label for="dr_today" style="cursor: pointer;">Idag</label></div>
+              <div style="margin-bottom: 10px;"><input type="radio" name="dateRange" value="yesterday" id="dr_yesterday"> <label for="dr_yesterday" style="cursor: pointer;">Igår</label></div>
+              <div style="margin-bottom: 10px;"><input type="radio" name="dateRange" value="thisWeek" id="dr_thisweek"> <label for="dr_thisweek" style="cursor: pointer;">Denna vecka</label></div>
+              <div style="margin-bottom: 10px;"><input type="radio" name="dateRange" value="lastWeek" id="dr_lastweek"> <label for="dr_lastweek" style="cursor: pointer;">Förra veckan</label></div>
+              <div style="margin-bottom: 10px;"><input type="radio" name="dateRange" value="thisMonth" id="dr_thismonth"> <label for="dr_thismonth" style="cursor: pointer;">Denna månad</label></div>
+              <div style="margin-bottom: 10px;"><input type="radio" name="dateRange" value="lastMonth" id="dr_lastmonth"> <label for="dr_lastmonth" style="cursor: pointer;">Förra månaden</label></div>
+              <div><input type="radio" name="dateRange" value="custom" id="dr_custom"> <label for="dr_custom" style="cursor: pointer;">Anpassad</label></div>
+            </div>
+            
+          </div>
+
+          <div id="customDateContainer" style="display: none; background: #f9f9f9; padding: 10px; border: 1px solid #ddd; border-radius: 4px; margin-bottom: 15px;">
+            <label for="from" style="font-weight: bold; font-size: 13px;">Från datum:</label>
+            <input id="from" type="datetime-local" class="checkmateFormEditField" style="margin-bottom: 10px;">
+            
+            <label for="to" style="font-weight: bold; font-size: 13px;">Till datum:</label>
+            <input id="to" type="datetime-local" class="checkmateFormEditField">
+          </div>
           
           <div style="margin:1.5em 0;"></div>
           
@@ -56,7 +78,7 @@
             <ol style="padding-left: 1.2em; margin-top: 0.5em; font-size: 14px;">
               <li style="margin-bottom: 0.5em;">Välj vilken regel du vill analysera i rullgardinsmenyn.</li>
               <li style="margin-bottom: 0.5em;">Markera önskade fordon i listan. <br><i style="color: #666;">Tips: Använd MyGeotabs globala gruppfilter i toppmenyn för att automatiskt sortera fram rätt fordon!</i></li>
-              <li style="margin-bottom: 0.5em;">Välj tidsperiod.</li>
+              <li style="margin-bottom: 0.5em;">Klicka på Tidsperiod för att välja önskat tidsspann.</li>
               <li style="margin-bottom: 0.5em;">Klicka på <strong>Visa Värmekarta</strong>.</li>
             </ol>
             <p style="font-size: 0.85em; color: #555; background: #f9f9f9; padding: 8px; border-radius: 4px;"><strong>Tips för att välja fordon:</strong> Håll in <code>CTRL</code> (eller <code>CMD</code> på Mac) för att välja flera enskilda fordon i listan. För att snabbt markera alla fordon, klicka på det översta, scrolla ner, håll in <code>SHIFT</code> och klicka på det nedersta.</p>
