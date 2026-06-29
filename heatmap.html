@@ -16,7 +16,7 @@
   <div id="heatmap" style="height: calc(100%)">
     
     <div id="disclaimer" style="background-color: #e8f4fa; border: 1px solid #bce0f0; color: #1a4f70; padding: 10px; margin-bottom: 15px; border-radius: 4px;">
-      <label id="disclaimerLabel" style="font-weight: bold; display: block; margin-bottom: 5px;">VÄRMEKARTA FÖR REGELBROTT</label>
+      <label id="disclaimerLabel" style="font-weight: bold; display: block; margin-bottom: 5px;">VÄRMEKARTA FÖR AVVIKELSER</label>
       <p style="margin-bottom: 0; font-size: 14px;">Detta verktyg hjälper dig att visuellt analysera var specifika Avvikelser (t.ex. fortkörning, tomgångskörning eller skarpa svängar) sker mest frekvent.</p>
     </div>
 
@@ -42,13 +42,13 @@
             </button>
 
             <div id="dateDropdownContent" style="display: none; position: absolute; top: 100%; left: 0; right: 0; background: white; border: 1px solid #ccc; box-shadow: 0 4px 8px rgba(0,0,0,0.15); z-index: 100; padding: 10px; border-radius: 4px; margin-top: 4px;">
-              <div style="margin-bottom: 10px;"><input type="radio" name="dateRange" value="today" id="dr_today" checked> <label for="dr_today" style="cursor: pointer;">Idag</label></div>
-              <div style="margin-bottom: 10px;"><input type="radio" name="dateRange" value="yesterday" id="dr_yesterday"> <label for="dr_yesterday" style="cursor: pointer;">Igår</label></div>
-              <div style="margin-bottom: 10px;"><input type="radio" name="dateRange" value="thisWeek" id="dr_thisweek"> <label for="dr_thisweek" style="cursor: pointer;">Denna vecka</label></div>
-              <div style="margin-bottom: 10px;"><input type="radio" name="dateRange" value="lastWeek" id="dr_lastweek"> <label for="dr_lastweek" style="cursor: pointer;">Förra veckan</label></div>
-              <div style="margin-bottom: 10px;"><input type="radio" name="dateRange" value="thisMonth" id="dr_thismonth"> <label for="dr_thismonth" style="cursor: pointer;">Denna månad</label></div>
-              <div style="margin-bottom: 10px;"><input type="radio" name="dateRange" value="lastMonth" id="dr_lastmonth"> <label for="dr_lastmonth" style="cursor: pointer;">Förra månaden</label></div>
-              <div><input type="radio" name="dateRange" value="custom" id="dr_custom"> <label for="dr_custom" style="cursor: pointer;">Anpassad</label></div>
+              <div style="margin-bottom: 10px; display: flex; align-items: center;"><input type="radio" name="dateRange" value="today" id="dr_today" checked style="margin: 0 8px 0 0;"> <label for="dr_today" style="cursor: pointer; margin: 0; font-weight: normal;">Idag</label></div>
+              <div style="margin-bottom: 10px; display: flex; align-items: center;"><input type="radio" name="dateRange" value="yesterday" id="dr_yesterday" style="margin: 0 8px 0 0;"> <label for="dr_yesterday" style="cursor: pointer; margin: 0; font-weight: normal;">Igår</label></div>
+              <div style="margin-bottom: 10px; display: flex; align-items: center;"><input type="radio" name="dateRange" value="thisWeek" id="dr_thisweek" style="margin: 0 8px 0 0;"> <label for="dr_thisweek" style="cursor: pointer; margin: 0; font-weight: normal;">Denna vecka</label></div>
+              <div style="margin-bottom: 10px; display: flex; align-items: center;"><input type="radio" name="dateRange" value="lastWeek" id="dr_lastweek" style="margin: 0 8px 0 0;"> <label for="dr_lastweek" style="cursor: pointer; margin: 0; font-weight: normal;">Förra veckan</label></div>
+              <div style="margin-bottom: 10px; display: flex; align-items: center;"><input type="radio" name="dateRange" value="thisMonth" id="dr_thismonth" style="margin: 0 8px 0 0;"> <label for="dr_thismonth" style="cursor: pointer; margin: 0; font-weight: normal;">Denna månad</label></div>
+              <div style="margin-bottom: 10px; display: flex; align-items: center;"><input type="radio" name="dateRange" value="lastMonth" id="dr_lastmonth" style="margin: 0 8px 0 0;"> <label for="dr_lastmonth" style="cursor: pointer; margin: 0; font-weight: normal;">Förra månaden</label></div>
+              <div style="display: flex; align-items: center;"><input type="radio" name="dateRange" value="custom" id="dr_custom" style="margin: 0 8px 0 0;"> <label for="dr_custom" style="cursor: pointer; margin: 0; font-weight: normal;">Anpassad</label></div>
             </div>
             
           </div>
