@@ -36,34 +36,41 @@ geotab.addin.heatmap = function() {
         }
     };
 
-    // Hjälpfunktion för att portionera API-anrop med SMART HASTIGHET
+    // Hjälpfunktion för att portionera API-anrop med SMART HASTIGHET & NEDRÄKNING
     var chunkedMultiCall = function(calls, chunkSize, onComplete, onError) {
         var allResults = [];
         var currentIndex = 0;
+        var totalCalls = calls.length;
+        var totalChunks = Math.ceil(totalCalls / chunkSize);
         
-        // Smart hastighetsberäkning!
-        // Har vi färre än 800 anrop? Kör blixtsnabbt (50 ms). 
-        // Har vi fler? Kör säkert och sprid ut dem (6500 ms).
-        var isLargeQuery = calls.length > 800;
+        // Smart hastighetsberäkning
+        var isLargeQuery = totalCalls > 800;
         var delay = isLargeQuery ? 6500 : 50; 
-        
-        // Om det är en tung körning, uppdatera UI så användaren vet varför det tar tid
-        if (isLargeQuery) {
-            b("Hämtar stora mängder data. Detta är för att förhindra systemöverbelastning. Vänligen vänta...");
-        }
 
         function doNextChunk() {
             var chunk = calls.slice(currentIndex, currentIndex + chunkSize);
+            
             if (chunk.length === 0) {
-                if (isLargeQuery) b(""); // Rensa varningsmeddelandet när det är klart
+                if (isLargeQuery) b(""); // Rensa meddelandet när vi är klara
                 onComplete(allResults);
                 return;
             }
+
+            // Dynamisk uppdatering av UI med nedräkning om det är en stor sökning
+            if (isLargeQuery) {
+                var currentChunkNum = Math.floor(currentIndex / chunkSize) + 1;
+                var chunksLeft = totalChunks - currentChunkNum;
+                // Räkna ut sekunder kvar (antalet kvarvarande klumpar * vår paus)
+                var secondsLeft = Math.round((chunksLeft * delay) / 1000);
+                
+                b("Hämtar stora mängder data för att förhindra systemöverbelastning.<br>" +
+                  "<strong>Laddar del " + currentChunkNum + " av " + totalChunks + ". Beräknad tid kvar: ca " + secondsLeft + " sekunder.</strong>");
+            }
+
             v.multiCall(chunk, function(chunkResults) {
                 allResults = allResults.concat(chunkResults);
                 currentIndex += chunkSize;
                 
-                // Använd vår dynamiska tidsfördröjning
                 setTimeout(doNextChunk, delay); 
             }, onError);
         }
