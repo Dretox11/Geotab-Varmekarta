@@ -2,8 +2,9 @@
 
 geotab.addin.heatmap = function() {
     // ---- VARIABLER ----
-    var v, h, m, p, y, E, w, i, l, r, c, D, t,
-        E_LIMIT = 300000;
+    var v, h, m, p, y, E, w, i, l, r, c, D, t, cancelBtn,
+        E_LIMIT = 300000,
+        isCancelled = false; // Vår nya strömbrytare
 
     var b = function(e) { l.innerHTML = e; };
     var B = function(e) { r.innerHTML = e; };
@@ -24,43 +25,51 @@ geotab.addin.heatmap = function() {
         return Math.round((new Date() - t) / 1000);
     }
 
+    // Uppdaterad för att visa/dölja Avbryt-knappen
     var T = function(e) {
         if (e) {
+            isCancelled = false; // Återställ alltid till false vid ny sökning
             i.disabled = !0;
+            cancelBtn.style.display = "block"; // Visa Avbryt-knappen
             c.style.display = "block";
         } else {
             setTimeout(function() {
                 c.style.display = "none";
             }, 600);
             i.disabled = !1;
+            cancelBtn.style.display = "none"; // Dölj Avbryt-knappen
         }
     };
 
-    // Hjälpfunktion för att portionera API-anrop med SMART HASTIGHET & NEDRÄKNING
+    // Uppdaterad för att lyssna på strömbrytaren
     var chunkedMultiCall = function(calls, chunkSize, onComplete, onError) {
         var allResults = [];
         var currentIndex = 0;
         var totalCalls = calls.length;
         var totalChunks = Math.ceil(totalCalls / chunkSize);
         
-        // Smart hastighetsberäkning
         var isLargeQuery = totalCalls > 800;
         var delay = isLargeQuery ? 6500 : 50; 
 
         function doNextChunk() {
+            // Kolla om användaren har klickat på Avbryt
+            if (isCancelled) {
+                b("Sökningen avbröts av användaren.");
+                T(!1); // Stäng av laddningssnurran och återställ knapparna
+                return; // Avsluta loopen helt
+            }
+
             var chunk = calls.slice(currentIndex, currentIndex + chunkSize);
             
             if (chunk.length === 0) {
-                if (isLargeQuery) b(""); // Rensa meddelandet när vi är klara
+                if (isLargeQuery) b(""); 
                 onComplete(allResults);
                 return;
             }
 
-            // Dynamisk uppdatering av UI med nedräkning om det är en stor sökning
             if (isLargeQuery) {
                 var currentChunkNum = Math.floor(currentIndex / chunkSize) + 1;
                 var chunksLeft = totalChunks - currentChunkNum;
-                // Räkna ut sekunder kvar (antalet kvarvarande klumpar * vår paus)
                 var secondsLeft = Math.round((chunksLeft * delay) / 1000);
                 
                 b("Hämtar stora mängder data för att förhindra systemöverbelastning.<br>" +
@@ -68,6 +77,13 @@ geotab.addin.heatmap = function() {
             }
 
             v.multiCall(chunk, function(chunkResults) {
+                // Dubbelkoll om sökningen avbröts medan vi väntade på svar från servern
+                if (isCancelled) {
+                    b("Sökningen avbröts av användaren.");
+                    T(!1);
+                    return;
+                }
+
                 allResults = allResults.concat(chunkResults);
                 currentIndex += chunkSize;
                 
@@ -239,6 +255,7 @@ geotab.addin.heatmap = function() {
         E = document.getElementById("from");
         w = document.getElementById("to");
         i = document.getElementById("showHeatMap");
+        cancelBtn = document.getElementById("cancelHeatMap"); // NY RAD
         l = document.getElementById("error");
         r = document.getElementById("message");
         c = document.getElementById("loading");
@@ -250,6 +267,9 @@ geotab.addin.heatmap = function() {
         w.value = year + "-" + month + "-" + day + "T23:59";
 
         document.getElementById("showHeatMap").addEventListener("click", function(e) { e.preventDefault(); d(); });
+        
+        // NY RAD: Lyssna på klick på avbryt-knappen
+        cancelBtn.addEventListener("click", function(e) { e.preventDefault(); isCancelled = true; });
     };
 
     var u = function(e, t) {
