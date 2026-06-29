@@ -2,29 +2,12 @@
 
 geotab.addin.heatmap = function() {
     // ---- VARIABLER ----
-    var v, // api (Geotab API-objektet)
-        h, // map (Leaflet-kartobjektet)
-        m, // heatLayer (Själva värmekartans lager)
-        p, // exceptionTypes (Dropdown för regler)
-        y, // vehicles (Dropdown för fordon)
-        E, // from (Startdatum)
-        w, // to (Slutdatum)
-        i, // showHeatMap (Knappen)
-        l, // error (Div för felmeddelanden)
-        r, // message (Div för info-meddelanden)
-        c, // loading (Laddnings-spinnern)
-        D, // Antal valda fordon
-        t, // startTime (För att mäta hur lång tid hämtningen tar)
-        I = 50000, // Resultatgräns (resultsLimit) per anrop
-        E_LIMIT = 300000; // Ny, högre gräns för Exception History
+    var v, h, m, p, y, E, w, i, l, r, c, D, t,
+        E_LIMIT = 300000;
 
-    // Hjälpfunktion: Uppdaterar felmeddelande-UI
     var b = function(e) { l.innerHTML = e; };
-    
-    // Hjälpfunktion: Uppdaterar informationsmeddelande-UI
     var B = function(e) { r.innerHTML = e; };
 
-    // Hjälpfunktion: Kontrollerar om en array är helt tom
     function x(e) {
         if (!e || 0 === e.length) return !0;
         for (var t = 0; t < e.length; t++) {
@@ -33,17 +16,14 @@ geotab.addin.heatmap = function() {
         return !0;
     }
 
-    // Hjälpfunktion: Formaterar nummer med tusentalsavgränsare
     function S(e) {
-        return e.toString().replace(/(\d)(?=(\d{3})+(?!\d))/g, "$1,");
+        return e.toString().replace(/(\d)(?=(\d{3})+(?!\d))/g, "$1 ");
     }
 
-    // Hjälpfunktion: Räknar ut hur många sekunder anropet tog
     function N() {
         return Math.round((new Date() - t) / 1000);
     }
 
-    // Hjälpfunktion: Togglar UI för att visa att systemet laddar
     var T = function(e) {
         if (e) {
             i.disabled = !0;
@@ -56,114 +36,78 @@ geotab.addin.heatmap = function() {
         }
     };
 
-    // HUVUDFUNKTION: Rendera heatmappen baserat på val
+    // Hjälpfunktion för att portionera API-anrop med SMART HASTIGHET
+    var chunkedMultiCall = function(calls, chunkSize, onComplete, onError) {
+        var allResults = [];
+        var currentIndex = 0;
+        
+        // Smart hastighetsberäkning!
+        // Har vi färre än 800 anrop? Kör blixtsnabbt (50 ms). 
+        // Har vi fler? Kör säkert och sprid ut dem (6500 ms).
+        var isLargeQuery = calls.length > 800;
+        var delay = isLargeQuery ? 6500 : 50; 
+        
+        // Om det är en tung körning, uppdatera UI så användaren vet varför det tar tid
+        if (isLargeQuery) {
+            b("Hämtar stora mängder data. Detta är för att förhindra systemöverbelastning. Vänligen vänta...");
+        }
+
+        function doNextChunk() {
+            var chunk = calls.slice(currentIndex, currentIndex + chunkSize);
+            if (chunk.length === 0) {
+                if (isLargeQuery) b(""); // Rensa varningsmeddelandet när det är klart
+                onComplete(allResults);
+                return;
+            }
+            v.multiCall(chunk, function(chunkResults) {
+                allResults = allResults.concat(chunkResults);
+                currentIndex += chunkSize;
+                
+                // Använd vår dynamiska tidsfördröjning
+                setTimeout(doNextChunk, delay); 
+            }, onError);
+        }
+        doNextChunk();
+    };
+
+    // Starta utritning av kartan
     var d = function() {
-        // Rensa existerande heatlayer om den finns
         if (typeof m !== "undefined") {
             h.removeLayer(m);
         }
         
-        // Skapa en ny Leaflet HeatLayer med gradientfärger
         m = L.heatLayer({
             radius: { value: 24, absolute: !1 },
             opacity: 0.7,
             gradient: { 0.45: "rgb(0,0,255)", 0.55: "rgb(0,255,255)", 0.65: "rgb(0,255,0)", 0.95: "yellow", 1: "rgb(255,0,0)" }
         }).addTo(h);
 
-        // Räkna antal valda fordon
         D = 0;
         for (var e = 0; e < y.options.length; e++) {
             if (y.options[e].selected) D++;
         }
 
-        // Om fordon är valda, bestäm vilken typ av data som ska hämtas
         if (D !== 0) {
-            t = new Date(); // Starta timer
-            if (p.disabled === true) {
-                n(); // Hämta platshistorik
-            } else {
-                o(); // Hämta undantag/regelbrott
-            }
+            t = new Date();
+            fetchExceptionData();
         } else {
             b("Vänligen välj minst ett fordon i listan och försök igen.");
         }
     };
 
-    // HÄMTA DATA: Platshistorik (Location History)
-    var n = function() {
-        var t = [];
-        var options = y.options;
-        for (var idx = 0; idx < options.length; idx++) {
-            if (options[idx].selected) t.push(options[idx].value || options[idx].text);
-        }
-
-        var fromDate = E.value;
-        var toDate = w.value;
-
-        if (b(""), B(""), null !== t && "" !== fromDate && "" !== toDate) {
-            T(!0); // Visa laddningsspinner
-            var fromISO = new Date(fromDate).toISOString();
-            var toISO = new Date(toDate).toISOString();
-            var calls = [];
-
-            // Bygg ihop ett multiCall för varje valt fordon
-            for (var u = 0; u < t.length; u++) {
-                calls.push(["Get", {
-                    typeName: "LogRecord",
-                    resultsLimit: I,
-                    search: { deviceSearch: { id: t[u] }, fromDate: fromISO, toDate: toISO }
-                }]);
-            }
-
-            v.multiCall(calls, function(results) {
-                if (x(results)) {
-                    b("No data to display");
-                    T(!1);
-                    return;
-                }
-                
-                var heatData = [], boundsData = [], totalRecords = 0, exceededCount = 0;
-                
-                for (var l = 0; l < results.length; l++) {
-                    var logs = results[l];
-                    for (var c = 0; c < logs.length; c++) {
-                        // Sålla bort ogiltiga koordinater (0,0)
-                        if (0 !== logs[c].latitude || 0 !== logs[c].longitude) {
-                            heatData.push({ lat: logs[c].latitude, lon: logs[c].longitude, value: 1 });
-                            boundsData.push(new L.LatLng(logs[c].latitude, logs[c].longitude));
-                            totalRecords++;
-                        }
-                    }
-                    if (logs.length >= I) exceededCount++;
-                }
-
-                if (heatData.length > 0) {
-                    h.fitBounds(boundsData); // Centrera kartan
-                    m.setLatLngs(heatData);  // Applicera data på heatmappen
-                   B("Visar " + S(totalRecords) + " sammanslagna loggposter för de " + S(D) + " valda fordonen. [" + N() + " sek]");
-                    
-                    if (exceededCount > 0) {
-                        b("Obs: Alla resultat visas inte eftersom resultatgränsen på " + S(I) + " överskreds för " + S(exceededCount) + " av de valda fordonen.");
-                    }
-                } else {
-                    b("Ingen data att visa");
-                }
-                T(!1);
-            }, function(err) {
-                alert("Fel vid hämtning av platshistorik: " + err);
-                T(!1);
-            });
-        }
-    };
-
-    // HÄMTA DATA: Regelbrott/Undantag (Exception History) - OPTIMERAD VERSION
-    var o = function() {
+    // Logik för att hämta avvikelser och loggar
+    var fetchExceptionData = function() {
         var ruleId = p.options[p.selectedIndex].value;
         var ruleName = p.options[p.selectedIndex].text;
+        
+        if (!ruleId || ruleId === "") {
+            b("Vänligen välj en regel i listan.");
+            return;
+        }
+
         var vehicles = [];
         var options = y.options;
         
-        // Hämta valda fordon
         for (var a = 0; a < options.length; a++) {
             if (options[a].selected) vehicles.push(options[a].value || options[a].text);
         }
@@ -171,64 +115,62 @@ geotab.addin.heatmap = function() {
         var fromDate = E.value;
         var toDate = w.value;
 
-        if (b(""), B(""), null !== vehicles && null !== ruleId && "" !== fromDate && "" !== toDate) {
-            T(!0); // Visa laddningsspinner
+        if (b(""), B(""), null !== vehicles && "" !== fromDate && "" !== toDate) {
+            T(!0);
             var fromISO = new Date(fromDate).toISOString();
             var toISO = new Date(toDate).toISOString();
             var exceptionCalls = [];
 
-            // Steg 1: Bygg anrop för att hämta ExceptionEvents för valda fordon och regel
+            // Steg 1: Hämta alla regelbrott för valda fordon
             for (var s = 0; s < vehicles.length; s++) {
                 exceptionCalls.push(["Get", {
                     typeName: "ExceptionEvent",
-                    resultsLimit: E_LIMIT, // <--- ÄNDRAD FRÅN I
+                    resultsLimit: 50000, 
                     search: { deviceSearch: { id: vehicles[s] }, ruleSearch: { id: ruleId }, fromDate: fromISO, toDate: toISO }
                 }]);
             }
 
-            // Skicka iväg alla exception-anrop
-            v.multiCall(exceptionCalls, function(exceptionResults) {
+            chunkedMultiCall(exceptionCalls, 100, function(exceptionResults) {
                 if (x(exceptionResults)) {
-                    b("Ingen data att visa");
+                    b("Inga regelbrott hittades för vald period.");
                     T(!1);
                     return;
                 }
 
                 var logCalls = [];
-                var vehiclesWithExceptions = [];
-                var exceptionsByDevice = {};
                 var totalExceptions = 0;
                 
-                // Steg 2: Analysera vilka fordon som faktiskt hade regelbrott
+                // Steg 2: Skapa exakta sökfönster för loggarna baserat på när regelbrotten skedde
                 for (var n = 0; n < exceptionResults.length; n++) {
                     var exceptions = exceptionResults[n];
                     
                     if (exceptions && exceptions.length > 0) {
-                        var deviceId = vehicles[n]; // Matchar index från våra anrop
-                        vehiclesWithExceptions.push(deviceId);
-                        exceptionsByDevice[deviceId] = exceptions;
-                        totalExceptions += exceptions.length;
-
-                        // Bygg anrop för att hämta LogRecords för ENBART de fordon som hade regelbrott
-                        logCalls.push(["Get", {
-                            typeName: "LogRecord",
-                            resultsLimit: E_LIMIT, // <--- ÄNDRAD FRÅN I
-                            search: { deviceSearch: { id: deviceId }, fromDate: fromISO, toDate: toISO }
-                        }]);
+                        for (var e = 0; e < exceptions.length; e++) {
+                            totalExceptions++;
+                            
+                            logCalls.push(["Get", {
+                                typeName: "LogRecord",
+                                resultsLimit: 50000, 
+                                search: { 
+                                    deviceSearch: { id: exceptions[e].device.id }, 
+                                    fromDate: exceptions[e].activeFrom, 
+                                    toDate: exceptions[e].activeTo 
+                                }
+                            }]);
+                        }
                     }
                 }
 
-                // Om inga fordon hade några regelbrott av denna typ
                 if (logCalls.length === 0) {
-                    b("Ingen data att visa");
+                    b("Inga regelbrott hittades.");
                     T(!1);
                     return;
                 }
 
-                // Steg 3: Hämta LogRecords för hela tidsperioden (max 1 anrop per fordon)
-                v.multiCall(logCalls, function(logResults) {
+                // Steg 3: Hämta positionerna
+                chunkedMultiCall(logCalls, 100, function(logResults) {
                     if (x(logResults)) {
-                        b("Ingen data att visa");
+                        b("Ingen positionsdata kunde hämtas för regelbrotten.");
                         T(!1);
                         return;
                     }
@@ -236,59 +178,30 @@ geotab.addin.heatmap = function() {
                     var heatData = [];
                     var boundsData = [];
                     var totalRecords = 0;
-                    var exceededLogs = 0;
                     
-                    // Steg 4: Filtrera loggarna lokalt i webbläsaren
                     for (var i = 0; i < logResults.length; i++) {
                         var logs = logResults[i];
-                        var deviceId = vehiclesWithExceptions[i];
-                        var deviceExceptions = exceptionsByDevice[deviceId];
-
-                        if (logs.length >= I) exceededLogs++;
 
                         for (var c = 0; c < logs.length; c++) {
                             var log = logs[c];
                             
-                            // Sålla bort ogiltiga koordinater
                             if (0 !== log.latitude || 0 !== log.longitude) {
-                                // Loggens tidsstämpel
-                                var logTime = new Date(log.dateTime).getTime(); 
-
-                                // Kontrollera om loggens tid faller inom något av fordonets regelbrott
-                                var isWithinException = false;
-                                for (var e = 0; e < deviceExceptions.length; e++) {
-                                    var ex = deviceExceptions[e];
-                                    var start = new Date(ex.activeFrom).getTime();
-                                    var end = new Date(ex.activeTo).getTime();
-
-                                    if (logTime >= start && logTime <= end) {
-                                        isWithinException = true;
-                                        break; // Vi hittade en matchning, ingen idé att leta vidare
-                                    }
-                                }
-
-                                // Om loggen skedde under ett regelbrott, spara den för kartan!
-                                if (isWithinException) {
-                                    heatData.push({ lat: log.latitude, lon: log.longitude, value: 1 });
-                                    boundsData.push(new L.LatLng(log.latitude, log.longitude));
-                                    totalRecords++;
-                                }
+                                heatData.push({ lat: log.latitude, lon: log.longitude, value: 1 });
+                                boundsData.push(new L.LatLng(log.latitude, log.longitude));
+                                totalRecords++;
                             }
                         }
                     }
 
-                    // Steg 5: Rita ut på kartan
+                    // Steg 4: Rita ut
                     if (heatData.length > 0) {
                         h.fitBounds(boundsData);
                         m.setLatLngs(heatData);
-                        B("Visar " + S(totalRecords) + " sammanslagna loggposter associerade med de " + S(totalExceptions) + " '" + ruleName + "'-regelbrott som hittades för de " + S(D) + " valda fordonen. [" + N() + " sek]");
-                        
-                        if (exceededLogs > 0) {
-                            b("Obs: Resultatgränsen på " + S(E_LIMIT) + " loggar överskreds för vissa fordon. Försök att välja ett kortare tidsspann om du upplever att data saknas.");
-                        }
+                        B("Visar " + S(totalRecords) + " datapunkter för " + S(totalExceptions) + " st '" + ruleName + "'-regelbrott. [" + N() + " sek]");
                         T(!1);
                     } else {
-                        b("Ingen data att visa");
+                        b("Ingen data att visa på kartan.");
+                        T(!1);
                     }
 
                 }, function(err) {
@@ -303,21 +216,17 @@ geotab.addin.heatmap = function() {
         }
     };
 
-    // UI-SETUP: Kopplar HTML-elementen till koden och bygger kartan
     var a = function(coords) {
-        // Skapa Leaflet-kartan baserat på koordinater
         h = new L.Map("heatmap-map", {
             center: new L.LatLng(coords.latitude, coords.longitude),
             zoom: 13
         });
         
-        // Lägg till kartgrafiken (Tiles) från OpenStreetMap
-        L.tileLayer("http://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png", {
+        L.tileLayer("https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png", {
             attribution: '&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a>',
             subdomains: ["a", "b", "c"]
         }).addTo(h);
 
-        // Hämta UI-element från HTML-filen
         p = document.getElementById("exceptionTypes");
         y = document.getElementById("vehicles");
         E = document.getElementById("from");
@@ -327,74 +236,54 @@ geotab.addin.heatmap = function() {
         r = document.getElementById("message");
         c = document.getElementById("loading");
 
-        // Sätt defaultvärden på från/till-datum (Idag 00:00 - 23:59)
         var now = new Date(), day = now.getDate(), month = now.getMonth() + 1, year = now.getFullYear();
         if (day < 10) day = "0" + day;
         if (month < 10) month = "0" + month;
         E.value = year + "-" + month + "-" + day + "T00:00";
         w.value = year + "-" + month + "-" + day + "T23:59";
 
-        // Lägg till event-listeners på knapparna
-        document.getElementById("visualizeByLocationHistory").addEventListener("click", function() { p.disabled = !0; });
-        document.getElementById("visualizeByExceptionHistory").addEventListener("click", function() { p.disabled = !1; });
         document.getElementById("showHeatMap").addEventListener("click", function(e) { e.preventDefault(); d(); });
     };
 
-    // Hjälpfunktion: Sortera listor alfabetiskt
     var u = function(e, t) {
-        var nameA = e.name.toLowerCase(), nameB = t.name.toLowerCase();
-        return nameA === nameB ? 0 : nameB < nameA ? 1 : -1;
+        return e.name.localeCompare(t.name, 'sv', { numeric: true });
     };
 
-    // ---- GEOTAB ADD-IN LIVSCYKEL ----
     return {
-       // Körs en gång när Add-in laddas
         initialize: function(api, state, readyCallback) {
-            v = api; // Spara api-objektet
+            v = api; 
 
             if ("geolocation" in navigator) {
                 navigator.geolocation.getCurrentPosition(
                     function(position) {
-                        a(position.coords); // Starta kartan på användarens nuvarande plats
+                        a(position.coords); 
                         readyCallback();
                     },
                     function(error) { 
-                        console.warn("Plats nekad, startar i Stockholm.");
-                        // Standardkoordinater för Stockholm (Sverige)
                         a({ longitude: 18.0686, latitude: 59.3293 });
                         readyCallback();
                     }
                 );
             } else {
-                // Om webbläsaren inte stöder platstjänster alls
                 a({ longitude: 18.0686, latitude: 59.3293 });
                 readyCallback();
             }
         },
 
-// Körs varje gång sidan visas ELLER när gruppfiltret ändras i MyGeotab
         focus: function(api, state) {
             v = api;
             
-            // 1. Töm fordonslistan helt
             y.options.length = 0; 
-            
-            // 2. Töm regellistan och lägg tillbaka standardvalet
             p.options.length = 0;
+            
             var defaultRule = new Option("Välj en regel", "");
             defaultRule.disabled = true;
             defaultRule.selected = true;
             p.add(defaultRule);
 
-            // 3. Hämta aktuellt gruppfilter från MyGeotab
             var groupFilter = state.getGroupFilter();
-
-            // Skapa grundsökningen
-            var deviceSearch = { 
-                fromDate: (new Date()).toISOString() 
-            };
+            var deviceSearch = { fromDate: (new Date()).toISOString() };
             
-            // 4. "Tvätta" filtret - Geotabs API kräver att vi BARA skickar in id:t
             if (groupFilter && groupFilter.length > 0) {
                 deviceSearch.groups = [];
                 for (var f = 0; f < groupFilter.length; f++) {
@@ -402,14 +291,13 @@ geotab.addin.heatmap = function() {
                 }
             }
 
-            // 5. Hämta fordon baserat på det tvättade filtret och fyll listan
             v.call("Get", {
                 typeName: "Device",
                 resultsLimit: 50000,
                 search: deviceSearch
             }, function(devices) {
                 if (devices && devices.length > 0) {
-                    devices.sort(u); // Sortera i bokstavsordning
+                    devices.sort(u); 
                     devices.forEach(function(device) {
                         var option = new Option();
                         option.text = device.name;
@@ -417,20 +305,18 @@ geotab.addin.heatmap = function() {
                         y.add(option);
                     });
                 } else {
-                    // Om gruppen existerar men saknar fordon
                     var emptyOption = new Option("Inga fordon i denna grupp", "");
                     emptyOption.disabled = true;
                     y.add(emptyOption);
                 }
             }, b); 
 
-            // 6. Hämta reglerna och fyll listan
             v.call("Get", {
                 typeName: "Rule",
                 resultsLimit: 50000
             }, function(rules) {
                 if (rules && rules.length > 0) {
-                    rules.sort(u); // Sortera i bokstavsordning
+                    rules.sort(u); 
                     rules.forEach(function(rule) {
                         var option = new Option();
                         option.text = rule.name;
@@ -440,7 +326,6 @@ geotab.addin.heatmap = function() {
                 }
             }, b);
 
-            // Tvinga kartan att uppdatera sin storlek
             setTimeout(function() {
                 h.invalidateSize();
             }, 200);
