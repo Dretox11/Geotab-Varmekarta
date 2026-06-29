@@ -72,7 +72,7 @@ geotab.addin.heatmap = function() {
                 var chunksLeft = totalChunks - currentChunkNum;
                 var secondsLeft = Math.round((chunksLeft * delay) / 1000);
                 
-                b("Hämtar stora mängder data för att förhindra systemöverbelastning.<br>" +
+                b("Hämtar stora mängder data för att förhindra systemöverbelastning, delas hämtningen upp i delar.<br>" +
                   "<strong>Laddar del " + currentChunkNum + " av " + totalChunks + ". Beräknad tid kvar: ca " + secondsLeft + " sekunder.</strong>");
             }
 
