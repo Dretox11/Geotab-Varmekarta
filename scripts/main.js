@@ -220,7 +220,7 @@ geotab.addin.heatmap = function() {
                     if (heatData.length > 0) {
                         h.fitBounds(boundsData);
                         m.setLatLngs(heatData);
-                        B("Visar " + S(totalRecords) + " datapunkter för " + S(totalExceptions) + " st '" + ruleName + "'-regelbrott. [" + N() + " sek]");
+                        B("Visar " + S(totalRecords) + " datapunkter för " + S(totalExceptions) + " st avvikelser från regeln '" + ruleName + "' [" + N() + " sek]");
                         T(!1);
                     } else {
                         b("Ingen data att visa på kartan.");
