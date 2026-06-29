@@ -15,55 +15,54 @@
 <body>
   <div id="heatmap" style="height: calc(100%)">
     
-    <div id="disclaimer">
-      <label id="disclaimerLabel">Sample add-in/tool</label>
-      <p>This tool is provided as an example and is available on an As-Is basis...</p>
+    <div id="disclaimer" style="background-color: #e8f4fa; border: 1px solid #bce0f0; color: #1a4f70;">
+      <label id="disclaimerLabel">VÄRMEKARTA FÖR GEOTAB</label>
+      <p style="margin-bottom: 0;">Detta verktyg hjälper dig att visuellt analysera din fordonsflottas rörelsemönster. Identifiera snabbt var dina fordon tillbringar mest tid eller var specifika regelbrott (t.ex. fortkörning eller tomgångskörning) sker mest frekvent.</p>
     </div>
 
     <div class="cssGrid sm-part-12">
       <div class="lg-part-2 md-part-3 sm-part-12">
         <div id="controls">
-          <h2>Heatmap</h2>
-          <p>This example demonstrates how to create an add-in to visualize location or exception (rule violation) history using a heat map.</p>
+          <h2>Inställningar</h2>
           
-          <label for="visualizeBy">Visualize by:</label> 
-          <input type="radio" id="visualizeByLocationHistory" name="visualizeBy" value="locationHistory" checked="checked"> Location History 
-          <input type="radio" id="visualizeByExceptionHistory" name="visualizeBy" value="exceptionHistory"> Exception History 
+          <label for="visualizeBy">Analysera utifrån:</label> 
+          <input type="radio" id="visualizeByLocationHistory" name="visualizeBy" value="locationHistory" checked="checked"> Platshistorik 
+          <input type="radio" id="visualizeByExceptionHistory" name="visualizeBy" value="exceptionHistory"> Regelbrott 
           
-          <label for="exceptionTypes">Rule:</label> 
+          <label for="exceptionTypes">Välj regel (vid regelbrott):</label> 
           <select id="exceptionTypes" class="checkmateFormEditField" disabled="disabled">
-            <option disabled="disabled">Select a rule</option>
+            <option disabled="disabled" selected="selected">Välj en regel</option>
           </select> 
           
-          <label for="vehicles">Vehicle(s):</label> 
-          <select id="vehicles" class="checkmateFormEditField" multiple="true"></select> 
+          <label for="vehicles">Fordon:</label> 
+          <select id="vehicles" class="checkmateFormEditField" multiple="true" style="min-height: 150px;"></select> 
           
-          <label for="from">From:</label> 
+          <label for="from">Från datum:</label> 
           <input id="from" type="datetime-local" class="checkmateFormEditField"> 
           
-          <label for="to">To:</label> 
+          <label for="to">Till datum:</label> 
           <input id="to" type="datetime-local" class="checkmateFormEditField">
           
-          <div style="margin:1em"></div>
+          <div style="margin:1.5em 0;"></div>
           
-          <input type="submit" value="Show Heat Map" id="showHeatMap">
+          <input type="submit" value="Visa Värmekarta" id="showHeatMap" style="background-color: #2c7ab1; color: white; border: none; padding: 10px 15px; border-radius: 4px; cursor: pointer; width: 100%;">
           
           <div id="error"></div>
           <div id="message"></div>
           
-          <div id="loading" class="spinner" style="display:none">
+          <div id="loading" class="spinner" style="display:none; margin-top: 20px;">
             <div></div><div></div><div></div>
           </div>
           
-          <div>
-            <h3>Instructions</h3>
-            <ol>
-              <li>Choose to visualize by <i>location history</i> or <i>exception history</i>.</li>
-              <li>If visualizing by exception history, select a rule...</li>
-              <li>Select the vehicle(s) to search on.</li>
-              <li>Specify a date/time range.</li>
-              <li>Click the <i>Show Heat Map</i> button to update the map.</li>
+          <div style="margin-top: 2em; padding-top: 1em; border-top: 1px solid #ccc;">
+            <h3>Så här gör du</h3>
+            <ol style="padding-left: 1.2em; margin-top: 0.5em;">
+              <li style="margin-bottom: 0.5em;">Välj om du vill titta på <strong>Platshistorik</strong> eller <strong>Regelbrott</strong>.</li>
+              <li style="margin-bottom: 0.5em;">Markera önskade fordon i listan. <br><i>Tips: Använd MyGeotabs globala gruppfilter i toppmenyn för att automatiskt sortera fram rätt fordon!</i></li>
+              <li style="margin-bottom: 0.5em;">Välj tidsperiod.</li>
+              <li style="margin-bottom: 0.5em;">Klicka på <strong>Visa Värmekarta</strong>.</li>
             </ol>
+            <p style="font-size: 0.9em; color: #555;"><strong>Tips:</strong> Håll in <code>CTRL</code> (eller <code>CMD</code> på Mac) för att välja flera enskilda fordon i listan. För att snabbt markera alla fordon, klicka på ett av dem och tryck sedan <code>CTRL + A</code>.</p>
           </div>
         </div>
       </div>
