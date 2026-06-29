@@ -85,7 +85,7 @@ geotab.addin.heatmap = function() {
                 o(); // Hämta undantag/regelbrott
             }
         } else {
-            b("Please select at least one vehicle from the list and try again.");
+            b("Vänligen välj minst ett fordon i listan och försök igen.");
         }
     };
 
@@ -140,17 +140,17 @@ geotab.addin.heatmap = function() {
                 if (heatData.length > 0) {
                     h.fitBounds(boundsData); // Centrera kartan
                     m.setLatLngs(heatData);  // Applicera data på heatmappen
-                    B("Displaying " + S(totalRecords) + " combined log records for the " + S(D) + " selected vehicles. [" + N() + " sec]");
+                   B("Visar " + S(totalRecords) + " sammanslagna loggposter för de " + S(D) + " valda fordonen. [" + N() + " sek]");
                     
                     if (exceededCount > 0) {
-                        b("Note: Not all results are displayed because the result limit of " + S(I) + " was exceeded for " + S(exceededCount) + " of the selected vehicles.");
+                        b("Obs: Alla resultat visas inte eftersom resultatgränsen på " + S(I) + " överskreds för " + S(exceededCount) + " av de valda fordonen.");
                     }
                 } else {
-                    b("No data to display");
+                    b("Ingen data att visa");
                 }
                 T(!1);
             }, function(err) {
-                alert(err);
+                alert("Fel vid hämtning av platshistorik: " + err);
                 T(!1);
             });
         }
@@ -189,7 +189,7 @@ geotab.addin.heatmap = function() {
             // Skicka iväg alla exception-anrop
             v.multiCall(exceptionCalls, function(exceptionResults) {
                 if (x(exceptionResults)) {
-                    b("No data to display");
+                    b("Ingen data att visa");
                     T(!1);
                     return;
                 }
@@ -220,7 +220,7 @@ geotab.addin.heatmap = function() {
 
                 // Om inga fordon hade några regelbrott av denna typ
                 if (logCalls.length === 0) {
-                    b("No data to display");
+                    b("Ingen data att visa");
                     T(!1);
                     return;
                 }
@@ -228,7 +228,7 @@ geotab.addin.heatmap = function() {
                 // Steg 3: Hämta LogRecords för hela tidsperioden (max 1 anrop per fordon)
                 v.multiCall(logCalls, function(logResults) {
                     if (x(logResults)) {
-                        b("No data to display");
+                        b("Ingen data att visa");
                         T(!1);
                         return;
                     }
@@ -281,23 +281,23 @@ geotab.addin.heatmap = function() {
                     if (heatData.length > 0) {
                         h.fitBounds(boundsData);
                         m.setLatLngs(heatData);
-                        B("Displaying " + S(totalRecords) + " combined log records associated with the " + S(totalExceptions) + " '" + ruleName + "' rule exceptions found for the " + S(D) + " selected vehicles. [" + N() + " sec]");
+                        B("Visar " + S(totalRecords) + " sammanslagna loggposter associerade med de " + S(totalExceptions) + " '" + ruleName + "'-regelbrott som hittades för de " + S(D) + " valda fordonen. [" + N() + " sek]");
                         
                         if (exceededLogs > 0) {
-                            b("Note: The result limit of " + S(E_LIMIT) + " logs was exceeded for some vehicles. Try selecting a shorter date range if you feel data is missing.");
+                            b("Obs: Resultatgränsen på " + S(E_LIMIT) + " loggar överskreds för vissa fordon. Försök att välja ett kortare tidsspann om du upplever att data saknas.");
                         }
                         T(!1);
                     } else {
-                        b("No data to display");
+                        b("Ingen data att visa");
                     }
 
                 }, function(err) {
-                    alert("Error fetching logs: " + err);
+                    alert("Fel vid hämtning av loggar: " + err);
                     T(!1);
                 });
 
             }, function(err) {
-                alert("Error fetching exceptions: " + err);
+                alert("Fel vid hämtning av regelbrott: " + err);
                 T(!1);
             });
         }
@@ -381,7 +381,7 @@ geotab.addin.heatmap = function() {
             
             // 2. Töm regellistan och lägg tillbaka standardvalet
             p.options.length = 0;
-            var defaultRule = new Option("Select a rule", "");
+            var defaultRule = new Option("Välj en regel", "");
             defaultRule.disabled = true;
             defaultRule.selected = true;
             p.add(defaultRule);
