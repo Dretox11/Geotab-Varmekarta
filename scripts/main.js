@@ -372,34 +372,65 @@ geotab.addin.heatmap = function() {
             }
         },
 
-        // Körs varje gång sidan visas för användaren
+// Körs varje gång sidan visas ELLER när gruppfiltret ändras i MyGeotab
         focus: function(api, state) {
             v = api;
             
-            // Hämta enheterna (fordonen) och fyll i dropdownen
+            // 1. Töm fordonslistan helt
+            y.options.length = 0; 
+            
+            // 2. Töm regellistan och lägg tillbaka standardvalet
+            p.options.length = 0;
+            var defaultRule = new Option("Select a rule", "");
+            defaultRule.disabled = true;
+            defaultRule.selected = true;
+            p.add(defaultRule);
+
+            // 3. Hämta aktuellt gruppfilter från MyGeotab
+            var groupFilter = state.getGroupFilter();
+
+            // Skapa grundsökningen
+            var deviceSearch = { 
+                fromDate: (new Date()).toISOString() 
+            };
+            
+            // 4. "Tvätta" filtret - Geotabs API kräver att vi BARA skickar in id:t
+            if (groupFilter && groupFilter.length > 0) {
+                deviceSearch.groups = [];
+                for (var f = 0; f < groupFilter.length; f++) {
+                    deviceSearch.groups.push({ id: groupFilter[f].id });
+                }
+            }
+
+            // 5. Hämta fordon baserat på det tvättade filtret och fyll listan
             v.call("Get", {
                 typeName: "Device",
                 resultsLimit: 50000,
-                search: { fromDate: (new Date()).toISOString(), groups: state.getGroupFilter() }
+                search: deviceSearch
             }, function(devices) {
                 if (devices && devices.length > 0) {
-                    devices.sort(u);
+                    devices.sort(u); // Sortera i bokstavsordning
                     devices.forEach(function(device) {
                         var option = new Option();
                         option.text = device.name;
                         option.value = device.id;
                         y.add(option);
                     });
+                } else {
+                    // Om gruppen existerar men saknar fordon
+                    var emptyOption = new Option("Inga fordon i denna grupp", "");
+                    emptyOption.disabled = true;
+                    y.add(emptyOption);
                 }
-            }, b);
+            }, b); 
 
-            // Hämta reglerna och fyll i dropdownen
+            // 6. Hämta reglerna och fyll listan
             v.call("Get", {
                 typeName: "Rule",
                 resultsLimit: 50000
             }, function(rules) {
                 if (rules && rules.length > 0) {
-                    rules.sort(u);
+                    rules.sort(u); // Sortera i bokstavsordning
                     rules.forEach(function(rule) {
                         var option = new Option();
                         option.text = rule.name;
@@ -409,7 +440,7 @@ geotab.addin.heatmap = function() {
                 }
             }, b);
 
-            // Säkerställ att kartan ritar om sig korrekt när man byter flik i MyGeotab
+            // Tvinga kartan att uppdatera sin storlek
             setTimeout(function() {
                 h.invalidateSize();
             }, 200);
